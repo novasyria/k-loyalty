@@ -353,6 +353,32 @@ let savedDestination = null;
 
 
 // =====================================
+// انتهاء الاشتراك
+// =====================================
+
+function subscriptionExpired(store) {
+
+    if (
+        !store ||
+        !store.expires_at
+    ) {
+
+        return false;
+
+    }
+
+
+    return (
+        new Date(
+            store.expires_at
+        ).getTime() <
+        Date.now()
+    );
+
+}
+
+
+// =====================================
 // التخزين
 // =====================================
 
@@ -499,7 +525,7 @@ async function loadSavedProject() {
             await db
                 .from("stores")
                 .select(
-                    "store_code, store_name, is_active"
+                    "store_code, store_name, is_active, expires_at"
                 )
                 .eq(
                     "store_code",
@@ -526,10 +552,11 @@ async function loadSavedProject() {
             result.data;
 
 
-        // المشروع متوقف
+        // المشروع متوقف أو انتهى اشتراكه
 
         if (
-            store.is_active !== true
+            store.is_active !== true ||
+            subscriptionExpired(store)
         ) {
 
             localStorage.removeItem(
@@ -537,7 +564,7 @@ async function loadSavedProject() {
             );
 
             errorMsg.textContent =
-                "المشروع المحفوظ متوقف حالياً.";
+                "المشروع المحفوظ متوقف أو انتهى اشتراكه.";
 
             return;
 
@@ -650,7 +677,7 @@ async function login() {
             await db
                 .from("stores")
                 .select(
-                    "id, store_code, is_active"
+                    "id, store_code, is_active, expires_at"
                 )
                 .eq(
                     "code_cashier",
@@ -678,6 +705,18 @@ async function login() {
 
                 errorMsg.textContent =
                     "هذا المشروع متوقف حالياً.";
+
+                return;
+
+            }
+
+
+            if (
+                subscriptionExpired(store)
+            ) {
+
+                errorMsg.textContent =
+                    "انتهى اشتراك هذا المشروع.";
 
                 return;
 
@@ -712,7 +751,7 @@ async function login() {
             await db
                 .from("stores")
                 .select(
-                    "id, store_code, is_active"
+                    "id, store_code, is_active, expires_at"
                 )
                 .eq(
                     "code_admin",
@@ -740,6 +779,18 @@ async function login() {
 
                 errorMsg.textContent =
                     "هذا المشروع متوقف حالياً.";
+
+                return;
+
+            }
+
+
+            if (
+                subscriptionExpired(store)
+            ) {
+
+                errorMsg.textContent =
+                    "انتهى اشتراك هذا المشروع. تواصل مع الإدارة للتجديد.";
 
                 return;
 
@@ -774,7 +825,7 @@ async function login() {
             await db
                 .from("stores")
                 .select(
-                    "id, store_code, store_name, is_active"
+                    "id, store_code, store_name, is_active, expires_at"
                 )
                 .eq(
                     "code_client",
@@ -802,6 +853,18 @@ async function login() {
 
                 errorMsg.textContent =
                     "هذا المشروع متوقف حالياً.";
+
+                return;
+
+            }
+
+
+            if (
+                subscriptionExpired(store)
+            ) {
+
+                errorMsg.textContent =
+                    "انتهى اشتراك هذا المشروع.";
 
                 return;
 

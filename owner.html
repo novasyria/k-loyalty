@@ -36,6 +36,15 @@
 
         .btn-copy-phone { background: #444; color: white; border: none; padding: 3px 6px; border-radius: 4px; cursor: pointer; font-size: 10px; margin-right: 4px; }
 
+        .subscription { text-align: center; background: #1b1b1b; border: 1px solid #d4af37; border-radius: 18px; padding: 20px; margin-bottom: 25px; }
+        .subscription h2 { color: #d4af37; margin-bottom: 12px; font-size: 18px; }
+        .sub-badge { display: inline-block; padding: 8px 18px; border-radius: 20px; font-weight: bold; font-size: 14px; margin-bottom: 10px; }
+        .sub-badge.active { background: #1d3a26; color: #76e39b; }
+        .sub-badge.trial { background: #3a331d; color: #e3c076; }
+        .sub-badge.expired { background: #3a1d1d; color: #ff7777; }
+        .sub-plan { color: #ddd; font-size: 14px; margin-top: 8px; }
+        .sub-expiry { color: #999; font-size: 12px; margin-top: 4px; }
+
         .settings h2 { color: #d4af37; text-align: center; margin-bottom: 18px; font-size: 18px; }
         .settings label { display: block; color: #ccc; margin-bottom: 6px; font-size: 13px; }
         .settings input { width: 100%; padding: 12px; margin-bottom: 15px; border: 1px solid #333; border-radius: 10px; background: #101010; color: white; font-size: 15px; outline: none; }
@@ -57,6 +66,13 @@
             <div class="stat"><strong id="customersCount">0</strong><span>العملاء</span></div>
             <div class="stat"><strong id="visitsCount">0</strong><span>الزيارات</span></div><div class="stat"><strong id="pointsCount">0</strong><span>النقاط</span></div>
             <div class="stat" style="border-color: #28a745;"><strong id="offersCount" style="color: #28a745;">0</strong><span>العروض</span></div>
+        </section>
+
+        <section class="subscription">
+            <h2>💳 حالة الاشتراك</h2>
+            <div class="sub-badge" id="subBadge">...جاري التحميل</div>
+            <div class="sub-plan" id="subPlanText">-</div>
+            <div class="sub-expiry" id="subExpiryText">-</div>
         </section>
 
         <section class="marketing-subscribers">
@@ -117,10 +133,52 @@
                     document.getElementById("pointsPerVisit").value = data.points_per_visit || 10;
                     document.getElementById("rewardPoints").value = data.reward_points || 100;
                     document.getElementById("rewardName").value = data.reward_name || "خصم 10%";
+                    renderSubscription(data);
                     return;
                 }
             } catch (e) {
                 console.error("خطأ جلب الإعدادات:", e);
+            }
+        }
+
+        function renderSubscription(store) {
+            const badge = document.getElementById("subBadge");
+            const planText = document.getElementById("subPlanText");
+            const expiryText = document.getElementById("subExpiryText");
+
+            if (!store.is_active) {
+                badge.textContent = "⛔ الاشتراك متوقف";
+                badge.className = "sub-badge expired";
+                planText.textContent = "تواصل مع الإدارة لإعادة التفعيل";
+                expiryText.textContent = "";
+                return;
+            }
+
+            const plan = store.sub_plan || "trial";
+            const planLabels = { trial: "فترة تجريبية", monthly: "اشتراك شهري", yearly: "اشتراك سنوي" };
+            const now = Date.now();
+            const hasExpiry = !!store.expires_at;
+            const expired = hasExpiry && new Date(store.expires_at).getTime() < now;
+
+            if (expired) {
+                badge.textContent = "⛔ انتهى الاشتراك";
+                badge.className = "sub-badge expired";
+                planText.textContent = "تواصل مع الإدارة لتجديد اشتراكك";
+                expiryText.textContent = "";
+                return;
+            }
+
+            badge.textContent =
+                (plan === "trial" ? "🕐 " : "✅ ") +
+                (planLabels[plan] || "اشتراك مفعل");
+            badge.className = "sub-badge " + (plan === "trial" ? "trial" : "active");
+            planText.textContent = planLabels[plan] || "اشتراك مفعل";
+
+            if (hasExpiry) {
+                const d = new Date(store.expires_at);
+                expiryText.textContent = "ينتهي في: " + d.toLocaleDateString("ar-EG") + " " + d.toLocaleTimeString("ar-EG", { hour: "2-digit", minute: "2-digit" });
+            } else {
+                expiryText.textContent = "";
             }
         }
 
