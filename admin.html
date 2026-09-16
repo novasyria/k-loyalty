@@ -493,6 +493,17 @@
             color: white;
         }
 
+        .delete-button {
+            background: #7a1f1f;
+            color: #ffb3b3;
+            border: 1px solid #a33;
+            margin-bottom: 0;
+        }
+
+        .delete-button:hover {
+            background: #932626;
+        }
+
         /* =========================
            الموبايل
         ========================= */
@@ -808,6 +819,16 @@
             type="button"
         ></button>
 
+        <!-- حذف المشروع -->
+
+        <button
+            id="deleteButton"
+            class="status-button delete-button"
+            type="button"
+        >
+            🗑 حذف المشروع نهائياً
+        </button>
+
     </div>
 
 </main>
@@ -905,6 +926,11 @@
     const closeDetails =
         document.getElementById(
             "closeDetails"
+        );
+
+    const deleteButton =
+        document.getElementById(
+            "deleteButton"
         );
 
 
@@ -1676,6 +1702,139 @@
                 openDetails(
                     updated
                 );
+
+            }
+
+        };
+
+
+    // =====================================
+    // حذف المشروع نهائياً
+    // =====================================
+
+    deleteButton.onclick =
+        async function () {
+
+            if (!selectedStore)
+                return;
+
+            const storeNameValue =
+                selectedStore.store_name ||
+                selectedStore.store_code;
+
+            const confirmMessage =
+                "⚠️ هل أنت متأكد؟\n\n" +
+                "سيتم حذف المشروع: " +
+                storeNameValue +
+                " نهائياً.\n" +
+                "سيتحذف معه جميع العملاء والنقاط والزيارات!";
+
+            if (
+                !confirm(
+                    confirmMessage
+                )
+            ) {
+
+                return;
+
+            }
+
+            deleteButton.disabled =
+                true;
+
+            deleteButton.textContent =
+                "جاري الحذف...";
+
+            try {
+
+                // حذف عملاء المشروع أولاً
+
+                const { error: customersError } =
+                    await db
+                        .from("customers")
+                        .delete()
+                        .eq(
+                            "store_id",
+                            selectedStore.id
+                        );
+
+                if (customersError) {
+
+                    throw customersError;
+
+                }
+
+                // حذف خانات الرصيد الخاصة بهذا المشروع
+
+                const { error: balancesError } =
+                    await db
+                        .from("customer_balances")
+                        .delete()
+                        .eq(
+                            "store_id",
+                            selectedStore.id
+                        );
+
+                if (balancesError) {
+
+                    // إذا الجدول مش موجود بنكمل
+
+                    console.warn(
+                        balancesError
+                    );
+
+                }
+
+                // حذف المشروع نفسه
+
+                const result =
+                    await db
+                        .from("stores")
+                        .delete()
+                        .eq(
+                            "id",
+                            selectedStore.id
+                        );
+
+                if (result.error) {
+
+                    throw result.error;
+
+                }
+
+                details.classList.remove(
+                    "show"
+                );
+
+                selectedStore =
+                    null;
+
+                await loadStores();
+
+                message.style.color =
+                    "#76e39b";
+
+                message.textContent =
+                    "تم حذف المشروع نهائياً ✅";
+
+            } catch (error) {
+
+                console.error(error);
+
+                message.style.color =
+                    "#ff7777";
+
+                message.textContent =
+                    "حدث خطأ: " +
+                    error.message;
+
+            } finally {
+
+                deleteButton.disabled =
+                    false;
+
+                deleteButton.textContent =
+                    "🗑 حذف المشروع نهائياً";
 
             }
 
