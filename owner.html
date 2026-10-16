@@ -51,7 +51,6 @@
     <main class="owner-card">
         <div class="logo">K</div>
         <h1 id="storeTitle">إدارة المشروع</h1>
-        <div class="project-code-badge" id="projectBadge">كود المشروع: -</div>
 
         <section class="stats">
             <div class="stat"><strong id="customersCount">0</strong><span>العملاء</span></div>
@@ -109,9 +108,6 @@
 
         if (!currentProjectCode) {
             alert("خطأ: لم يتم التعرف على كود المشروع في الرابط!");
-        } else {
-            document.getElementById("projectBadge").textContent = "كود المشروع: " + currentProjectCode;
-            document.getElementById("storeTitle").textContent = "إدارة المشروع (" + currentProjectCode + ")";
         }
 
         async function loadSettings() {
