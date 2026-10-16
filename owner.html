@@ -15,7 +15,7 @@
         h1 { color: #d4af37; margin-bottom: 4px; }
         .project-code-badge { background: #333; color: #d4af37; padding: 3px 10px; border-radius: 12px; font-size: 12px; display: inline-block; margin-bottom: 15px; }
         
-        .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 25px; }
+        .stats { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-bottom: 25px; }
         .stat { background: #202020; border: 1px solid #333; border-radius: 14px; padding: 12px 5px; }
         .stat strong { display: block; color: #d4af37; font-size: 20px; margin-bottom: 4px; }
         .stat span { color: #999; font-size: 11px; }
@@ -55,7 +55,6 @@
 
         <section class="stats">
             <div class="stat"><strong id="customersCount">0</strong><span>العملاء</span></div>
-            <div class="stat"><strong id="visitsCount">0</strong><span>الزيارات</span></div><div class="stat"><strong id="pointsCount">0</strong><span>النقاط</span></div>
             <div class="stat" style="border-color: #28a745;"><strong id="offersCount" style="color: #28a745;">0</strong><span>العروض</span></div>
         </section>
 
@@ -185,13 +184,14 @@
         };
 
         async function markAsAdded(memberID) {
-            if (!db) return;
+            if (!db) return false;
             try {
-                const { error } = await db.from("customers").update({ added_to_group: true }).eq("member_id", memberID);
+                const { error } = await db.from("customers").update({ added_to_group: true }).eq("member_id", memberID).eq("store_code", currentProjectCode);
                 if (error) throw error;
-                await loadData();
+                return true;
             } catch (err) {
                 console.error("خطأ التحديث:", err);
+                return false;
             }
         }
 
@@ -216,9 +216,15 @@
                     if (user.marketing_opt_in) offersSubscribers.push(user);
                 });
 
+                // الأحدث أولاً
+                offersSubscribers.sort(function (a, b) {
+                    const ta = a.created_at ? new Date(a.created_at).getTime() : 0;
+                    const tb = b.created_at ? new Date(b.created_at).getTime() : 0;
+                    if (tb !== ta) return tb - ta;
+                    return Number(b.id || 0) - Number(a.id || 0);
+                });
+
                 document.getElementById("customersCount").textContent = customers.length;
-                document.getElementById("visitsCount").textContent = totalVisits;
-                document.getElementById("pointsCount").textContent = totalPoints;
                 document.getElementById("offersCount").textContent = offersSubscribers.length;
 
                 tbody.innerHTML = "";
@@ -262,7 +268,15 @@
                         btn.textContent = "تمت الإضافة";
                         btn.onclick = async function() {
                             btn.disabled = true;
-                            await markAsAdded(user.member_id);
+                            btn.textContent = "...";
+                            const ok = await markAsAdded(user.member_id);
+                            if (ok) {
+                                tdStatus.innerHTML = "<span class='badge-done'>تمت الإضافة ✅</span>";
+                                tdAction.textContent = "-";
+                            } else {
+                                btn.disabled = false;
+                                btn.textContent = "تمت الإضافة";
+                            }
                         };
                         tdAction.appendChild(btn);
                     }
